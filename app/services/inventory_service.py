@@ -1,6 +1,7 @@
 # Inventory service logic
 import asyncio
 
+
 async def check_inventory(product_id: int) -> bool:
     await asyncio.sleep(1)
 

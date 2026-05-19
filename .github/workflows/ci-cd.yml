@@ -1,0 +1,93 @@
+name: Enterprise CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  IMAGE_NAME: async-ecommerce
+
+jobs:
+
+# =========================
+# 1. CI - Code Validation
+# =========================
+  ci-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
+# =========================
+# 2. Build Docker Image
+# =========================
+  build:
+    needs: ci-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE_NAME:latest .
+
+      - name: Save image artifact
+        run: docker save $IMAGE_NAME:latest > image.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+
+# =========================
+# 3. Deploy to Staging
+# =========================
+  staging:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < image.tar
+
+      - name: Run container (staging)
+        run: |
+          docker run -d -p 8000:8000 --name app $IMAGE_NAME:latest
+
+      - name: Wait for service
+        run: sleep 5
+
+      - name: Run smoke tests
+        run: python scripts/smoke_test.py
+
+# =========================
+# 4. Production Gate (Manual)
+# =========================
+  production:
+    needs: staging
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy approval required
+        run: echo "Manual approval required before production deployment"

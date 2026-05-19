@@ -27,6 +27,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+      - name: Start application server
+        run: |
+          python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 2  # Wait for server to start
 
       - name: Run tests
         run: pytest

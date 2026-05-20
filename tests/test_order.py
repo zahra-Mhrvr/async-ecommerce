@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.core.order import create_order

@@ -1,5 +1,7 @@
 import requests
 
+BASE_URL = "http://localhost:8000"
+
 def test_health():
-    r = requests.get("http://localhost:8000/health", timeout=5)
+    r = requests.get(f"{BASE_URL}/health", timeout=5)
     assert r.status_code == 200
